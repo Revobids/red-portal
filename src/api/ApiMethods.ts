@@ -13,22 +13,22 @@ const getFileHeaders = () => {
     return { Authorization: `Bearer ${access_token}` };
 };
 
-const responseMiddleware = (response: any) => {
+const responseMiddleware = <T = unknown>(response: T): T => {
     console.log("middleware response:", response);
     // Only logout if we get a 401 statusCode in the response body
-    if (response.statusCode === 401) {
+    if ((response as Record<string, unknown>).statusCode === 401) {
         logoutUser();
     }
     return response;
 };
 
 class ApiMethods {
-    static apiRequest(method: string, url: string, body = {}) {
+    static apiRequest<T = unknown>(method: string, url: string, body: Record<string, unknown> = {}): Promise<T> {
         const header = method === "GET" ? 
             { method, headers: getHeaders() } : 
             { method, body: JSON.stringify(body), headers: getHeaders() };
         
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             fetch(url, header)
                 .then((res) => res.json())
                 .then((res) => responseMiddleware(res))
@@ -37,10 +37,10 @@ class ApiMethods {
         });
     }
 
-    static apiFileRequest(method: string, url: string, file: File) {
+    static apiFileRequest<T = unknown>(method: string, url: string, file: File): Promise<T> {
         const formData = new FormData();
         formData.append('file', file);
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             fetch(url, { method, body: formData, headers: getFileHeaders() })
                 .then((res) => res.json())
                 .then(resolve)
@@ -48,28 +48,42 @@ class ApiMethods {
         });
     }
 
-    static get(url: string) {
-        return this.apiRequest("GET", url);
+    static apiFormDataRequest<T = unknown>(method: string, url: string, formData: FormData): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            fetch(url, { method, body: formData, headers: getFileHeaders() })
+                .then((res) => res.json())
+                .then((res) => responseMiddleware(res))
+                .then(resolve)
+                .catch(reject);
+        });
     }
 
-    static post(url: string, data: any) {
-        return this.apiRequest("POST", url, data);
+    static get<T = unknown>(url: string): Promise<T> {
+        return this.apiRequest<T>("GET", url);
     }
 
-    static filePost(url: string, file: File) {
-        return this.apiFileRequest("POST", url, file);
+    static post<T = unknown>(url: string, data: Record<string, unknown>): Promise<T> {
+        return this.apiRequest<T>("POST", url, data);
     }
 
-    static put(url: string, data: any) {
-        return this.apiRequest("PUT", url, data);
+    static filePost<T = unknown>(url: string, file: File): Promise<T> {
+        return this.apiFileRequest<T>("POST", url, file);
     }
 
-    static patch(url: string, data: any) {
-        return this.apiRequest("PATCH", url, data);
+    static put<T = unknown>(url: string, data: Record<string, unknown>): Promise<T> {
+        return this.apiRequest<T>("PUT", url, data);
     }
 
-    static delete(url: string) {
-        return this.apiRequest("DELETE", url);
+    static patch<T = unknown>(url: string, data: Record<string, unknown>): Promise<T> {
+        return this.apiRequest<T>("PATCH", url, data);
+    }
+
+    static postFormData<T = unknown>(url: string, formData: FormData): Promise<T> {
+        return this.apiFormDataRequest<T>("POST", url, formData);
+    }
+
+    static delete<T = unknown>(url: string, data?: Record<string, unknown>): Promise<T> {
+        return data ? this.apiRequest<T>("DELETE", url, data) : this.apiRequest<T>("DELETE", url);
     }
 }
 

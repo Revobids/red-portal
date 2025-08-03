@@ -33,13 +33,60 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
   status: 'UNPUBLISHED' | 'PUBLISHED';
-  location?: any;
-  propertyDetails?: any;
-  approvals?: any;
-  floorPlans?: any;
-  images?: any;
-  brochures?: any;
+  projectType: 'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE';
+  propertyType: 'APARTMENT' | 'VILLA' | 'PLOT' | 'OFFICE' | 'SHOP' | 'WAREHOUSE';
+  totalUnits: number;
+  totalArea: number;
+  areaUnit: string;
+  expectedCompletionDate: string;
+  constructionStartDate: string;
+  amenities?: string[];
+  amenitiesDescription?: string;
+  reraNumber?: string;
+  reraApprovalDate?: string;
+  reraWebsite?: string;
+  legalDetails?: string;
+  approvals?: {
+    name: string;
+    authority: string;
+    approvalNumber: string;
+    approvalDate: string;
+  }[];
+  minPrice?: number;
+  maxPrice?: number;
+  currency?: string;
+  floorPlans?: {
+    type: string;
+    area: number;
+    areaUnit: string;
+    bedrooms: number;
+    bathrooms: number;
+    price: number;
+  }[];
+  images?: {
+    url: string;
+    type: string;
+    caption: string;
+  }[];
+  brochures?: {
+    url: string;
+    name: string;
+  }[];
+  realEstateDeveloperId: string;
+  projectManagerId: string;
+  salesManagerId: string;
+  projectManager?: Employee;
+  salesManager?: Employee;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RealEstateDeveloper {

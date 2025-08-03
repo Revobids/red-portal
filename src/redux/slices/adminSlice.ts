@@ -39,6 +39,7 @@ interface IAddProjectForm {
   expectedCompletionDate: string;
   constructionStartDate: string;
   amenities: string[];
+  amenitiesDescription: string;
   projectManagerId: string;
   salesManagerId: string;
   minPrice: number;
@@ -48,10 +49,29 @@ interface IAddProjectForm {
   reraApprovalDate: string;
   reraWebsite: string;
   legalDetails: string;
-  approvals: any[];
-  floorPlans: any[];
-  images: any[];
-  brochures: any[];
+  approvals: {
+    name: string;
+    authority: string;
+    approvalNumber: string;
+    approvalDate: string;
+  }[];
+  floorPlans: {
+    type: string;
+    area: number;
+    areaUnit: string;
+    bedrooms: number;
+    bathrooms: number;
+    price: number;
+  }[];
+  images: {
+    url: string;
+    type: string;
+    caption: string;
+  }[];
+  brochures: {
+    url: string;
+    name: string;
+  }[];
 }
 
 interface IAdminState {
@@ -87,27 +107,27 @@ const adminSlice = createSlice({
     },
     
     // Office Form Actions
-    setOfficeFormField: (state, action: PayloadAction<{ field: keyof IAddOfficeForm; value: any }>) => {
+    setOfficeFormField: (state, action: PayloadAction<{ field: keyof IAddOfficeForm; value: string | boolean }>) => {
       const { field, value } = action.payload;
-      state.addOfficeForm[field] = value;
+      (state.addOfficeForm as Record<string, string | boolean>)[field] = value;
     },
     resetOfficeForm: (state) => {
       state.addOfficeForm = { ...reduxAdminSliceInitialStates.ADD_OFFICE_FORM_INITIAL_STATE };
     },
     
     // Employee Form Actions
-    setEmployeeFormField: (state, action: PayloadAction<{ field: keyof IAddEmployeeForm; value: any }>) => {
+    setEmployeeFormField: (state, action: PayloadAction<{ field: keyof IAddEmployeeForm; value: string }>) => {
       const { field, value } = action.payload;
-      state.addEmployeeForm[field] = value;
+      (state.addEmployeeForm as Record<string, string>)[field] = value;
     },
     resetEmployeeForm: (state) => {
       state.addEmployeeForm = { ...reduxAdminSliceInitialStates.ADD_EMPLOYEE_FORM_INITIAL_STATE };
     },
     
     // Project Form Actions
-    setProjectFormField: (state, action: PayloadAction<{ field: keyof IAddProjectForm; value: any }>) => {
+    setProjectFormField: (state, action: PayloadAction<{ field: keyof IAddProjectForm | string; value: string | number | boolean | string[] }>) => {
       const { field, value } = action.payload;
-      state.addProjectForm[field] = value;
+      (state.addProjectForm as unknown as Record<string, string | number | boolean | string[]>)[field] = value;
     },
     resetProjectForm: (state) => {
       state.addProjectForm = { ...reduxAdminSliceInitialStates.ADD_PROJECT_FORM_INITIAL_STATE };

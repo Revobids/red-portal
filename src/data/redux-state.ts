@@ -58,6 +58,7 @@ export const reduxAdminSliceInitialStates = {
     expectedCompletionDate: '',
     constructionStartDate: '',
     amenities: [''],
+    amenitiesDescription: '',
     projectManagerId: '',
     salesManagerId: '',
     minPrice: 0,
@@ -67,10 +68,29 @@ export const reduxAdminSliceInitialStates = {
     reraApprovalDate: '',
     reraWebsite: '',
     legalDetails: '',
-    approvals: [],
-    floorPlans: [],
-    images: [],
-    brochures: []
+    approvals: [] as {
+      name: string;
+      authority: string;
+      approvalNumber: string;
+      approvalDate: string;
+    }[],
+    floorPlans: [] as {
+      type: string;
+      area: number;
+      areaUnit: string;
+      bedrooms: number;
+      bathrooms: number;
+      price: number;
+    }[],
+    images: [] as {
+      url: string;
+      type: string;
+      caption: string;
+    }[],
+    brochures: [] as {
+      url: string;
+      name: string;
+    }[]
   },
   OFFICES_INITIAL_STATE: [],
   EMPLOYEES_INITIAL_STATE: [],

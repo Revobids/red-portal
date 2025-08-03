@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, FolderOpen, MapPin, Calendar, Eye, Edit, Trash2, Building2, X } from 'lucide-react';
+import { Plus, FolderOpen, Calendar, Eye, Edit, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { setProjectFormField, resetProjectForm, addProject, setProjects, setLoading, setError } from '@/redux/slices/adminSlice';
+import { setProjectFormField, resetProjectForm, setProjects, setLoading, setError } from '@/redux/slices/adminSlice';
 import ApiManager from '@/api/ApiManager';
+import EditProjectModal from './EditProjectModal';
+import ImageUpload, { ImageData } from '@/components/ui/image-upload';
+import { Project } from '@/types';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -32,6 +35,8 @@ const projectSchema = z.object({
   areaUnit: z.string().min(1, 'Area unit is required'),
   expectedCompletionDate: z.string().min(1, 'Expected completion date is required'),
   constructionStartDate: z.string().min(1, 'Construction start date is required'),
+  amenities: z.array(z.string()).optional(),
+  amenitiesDescription: z.string().optional(),
   projectManagerId: z.string().min(1, 'Project manager is required'),
   salesManagerId: z.string().min(1, 'Sales manager is required'),
   minPrice: z.number().min(0).optional(),
@@ -59,6 +64,9 @@ type ProjectFormData = z.infer<typeof projectSchema>;
 export default function ProjectManagement() {
   const [showForm, setShowForm] = useState(false);
   const [amenityInput, setAmenityInput] = useState('');
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [projectImages, setProjectImages] = useState<ImageData[]>([]);
   const dispatch = useAppDispatch();
   const { addProjectForm, projects, employees, isLoading } = useAppSelector((state) => state.admin);
 
@@ -86,6 +94,8 @@ export default function ProjectManagement() {
       areaUnit: addProjectForm.areaUnit,
       expectedCompletionDate: addProjectForm.expectedCompletionDate,
       constructionStartDate: addProjectForm.constructionStartDate,
+      amenities: addProjectForm.amenities,
+      amenitiesDescription: addProjectForm.amenitiesDescription,
       projectManagerId: addProjectForm.projectManagerId,
       salesManagerId: addProjectForm.salesManagerId,
       minPrice: addProjectForm.minPrice,
@@ -106,6 +116,7 @@ export default function ProjectManagement() {
       const projectData = {
         ...data,
         amenities: addProjectForm.amenities.filter(a => a.trim() !== ''),
+        amenitiesDescription: data.amenitiesDescription?.trim() || undefined,
         approvals: addProjectForm.approvals,
         floorPlans: addProjectForm.floorPlans,
         images: addProjectForm.images,
@@ -121,32 +132,55 @@ export default function ProjectManagement() {
       };
 
       console.log('Sending project data:', projectData);
-      const response: any = await ApiManager.createProject(projectData);
+      const response = await ApiManager.createProject(projectData);
       
-      if (response.success || response.id || response.data) {
+      if (response.success && response.data) {
+        const projectId = response.data.id;
+        
+        // Upload images if any
+        if (projectImages.length > 0 && projectId) {
+          try {
+            const imagesToUpload = projectImages.filter(img => img.file);
+            if (imagesToUpload.length > 0) {
+              const files = imagesToUpload.map(img => img.file!);
+              const metadata = imagesToUpload.map(img => ({
+                imageType: img.type,
+                caption: img.caption
+              }));
+              
+              await ApiManager.uploadProjectImages(projectId, files, metadata);
+            }
+          } catch (imageError) {
+            console.error('Image upload error:', imageError);
+            // Don't fail the whole operation for image upload errors
+          }
+        }
+        
         // Refresh the projects list
-        const projectsResponse: any = await ApiManager.getProjects();
-        if (projectsResponse && Array.isArray(projectsResponse.data || projectsResponse)) {
-          dispatch(setProjects(projectsResponse.data || projectsResponse));
+        const projectsResponse = await ApiManager.getProjects();
+        if (projectsResponse.success && projectsResponse.data) {
+          dispatch(setProjects(projectsResponse.data));
         }
         
         dispatch(resetProjectForm());
         reset();
+        setProjectImages([]);
         setShowForm(false);
         dispatch(setError(null));
       } else {
         dispatch(setError(response.message || 'Failed to create project'));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Project creation error:', error);
-      dispatch(setError(error.message || 'Network error occurred'));
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  const handleFormFieldChange = (field: string, value: any) => {
-    dispatch(setProjectFormField({ field: field as any, value }));
+  const handleFormFieldChange = (field: string, value: string | number | boolean | string[]) => {
+    dispatch(setProjectFormField({ field, value }));
   };
 
   const addAmenity = () => {
@@ -174,6 +208,21 @@ export default function ProjectManagement() {
   console.log('All employees:', employees.map(emp => ({ name: emp.name, role: emp.role })));
   console.log('Filtered manager options:', managerOptions.map(emp => ({ name: emp.name, role: emp.role })));
   console.log('Available managers for dropdown:', availableManagers.map(emp => ({ name: emp.name, role: emp.role })));
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = async () => {
+    // Refresh the projects list
+    const projectsResponse = await ApiManager.getProjects();
+    if (projectsResponse.success && projectsResponse.data) {
+      dispatch(setProjects(projectsResponse.data));
+    }
+    setEditingProject(null);
+    setShowEditModal(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -222,7 +271,7 @@ export default function ProjectManagement() {
                       value={addProjectForm.projectType}
                       onValueChange={(value) => {
                         handleFormFieldChange('projectType', value);
-                        setValue('projectType', value as any);
+                        setValue('projectType', value as 'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE');
                       }}
                     >
                       <SelectTrigger>
@@ -340,7 +389,7 @@ export default function ProjectManagement() {
                       value={addProjectForm.propertyType}
                       onValueChange={(value) => {
                         handleFormFieldChange('propertyType', value);
-                        setValue('propertyType', value as any);
+                        setValue('propertyType', value as 'APARTMENT' | 'VILLA' | 'PLOT' | 'OFFICE' | 'SHOP' | 'WAREHOUSE');
                       }}
                     >
                       <SelectTrigger>
@@ -511,7 +560,7 @@ export default function ProjectManagement() {
                     placeholder="Add amenity (e.g., Swimming Pool, Gym)"
                     value={amenityInput}
                     onChange={(e) => setAmenityInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAmenity())}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addAmenity())}
                   />
                   <Button type="button" onClick={addAmenity} variant="outline">
                     Add
@@ -537,6 +586,17 @@ export default function ProjectManagement() {
                 {addProjectForm.amenities.filter(a => a.trim() !== '').length === 0 && (
                   <p className="text-sm text-red-600">At least one amenity is required</p>
                 )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="amenitiesDescription">Amenities Description (Optional)</Label>
+                  <Textarea
+                    id="amenitiesDescription"
+                    placeholder="Provide additional details about amenities..."
+                    rows={3}
+                    {...register('amenitiesDescription')}
+                    onChange={(e) => handleFormFieldChange('amenitiesDescription', e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* Pricing (Optional) */}
@@ -643,6 +703,16 @@ export default function ProjectManagement() {
                 </div>
               </div>
 
+              {/* Project Images */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-slate-900">Project Images (Optional)</h3>
+                <ImageUpload
+                  images={projectImages}
+                  onImagesChange={setProjectImages}
+                  maxImages={10}
+                />
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <Button type="submit" disabled={isLoading || addProjectForm.amenities.filter(a => a.trim() !== '').length === 0}>
                   {isLoading ? 'Creating...' : 'Create Project'}
@@ -720,7 +790,12 @@ export default function ProjectManagement() {
                     <Eye className="h-4 w-4 mr-2" />
                     View
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEditProject(project)}
+                  >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
@@ -730,6 +805,17 @@ export default function ProjectManagement() {
           ))
         )}
       </div>
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        project={editingProject}
+        isOpen={showEditModal}
+        onClose={() => {
+          setEditingProject(null);
+          setShowEditModal(false);
+        }}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 }

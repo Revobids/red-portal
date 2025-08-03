@@ -22,7 +22,7 @@ export const useAuthInit = () => {
               username: payload.username || 'user',
               name: payload.username || 'User',
               email: 'user@example.com',
-              role: (payload.role?.toUpperCase() || 'MANAGER') as any,
+              role: (payload.role?.toUpperCase() || 'MANAGER') as 'ADMIN' | 'MANAGER' | 'SALES_MANAGER' | 'SALES_EXECUTIVE' | 'SALES' | 'FINANCE',
               realEstateDeveloperId: '1',
               officeId: '1',
               employeeId: payload.userId || '1'

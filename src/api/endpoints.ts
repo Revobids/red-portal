@@ -34,6 +34,8 @@ const ENDPOINTS = {
     PUBLISH_PROJECT: (id: string) => `projects/${id}/publish`,
     ASSIGN_EMPLOYEE_TO_PROJECT: (id: string) => `projects/${id}/employees`,
     REMOVE_EMPLOYEE_FROM_PROJECT: (id: string, employeeId: string) => `projects/${id}/employees/${employeeId}`,
+    UPLOAD_PROJECT_IMAGES: (id: string) => `projects/${id}/upload-images`,
+    DELETE_PROJECT_IMAGE: (id: string) => `projects/${id}/images`,
     DELETE_PROJECT: (id: string) => `projects/${id}`,
     
     // Health Check

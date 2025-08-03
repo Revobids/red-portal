@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { loginStart, loginSuccess, loginFailure } from '@/redux/slices/authSlice';
+import { loginStart, loginSuccess, loginFailure, clearError } from '@/redux/slices/authSlice';
 import ApiManager from '@/api/ApiManager';
 import { useRouter } from 'next/navigation';
 
@@ -35,37 +35,36 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  // Clear error when user starts typing
+  const handleInputChange = () => {
+    if (error) {
+      dispatch(clearError());
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     dispatch(loginStart());
     
     try {
-      const response: any = await ApiManager.login(data);
+      const response = await ApiManager.login(data);
       console.log('Login response:', response);
       
-      if (response.accessToken && response.user) {
+      if (response.success && response.data) {
         // Store token in cookie
-        document.cookie = `access_token=${response.accessToken}; path=/; max-age=86400`;
+        document.cookie = `access_token=${response.data.token}; path=/; max-age=86400`;
         
-        // Map the user data to match our User type
-        const userData = {
-          id: response.user.id,
-          username: response.user.username,
-          name: response.user.name,
-          email: response.user.email,
-          role: response.user.role.toUpperCase() as any,
-          realEstateDeveloperId: response.user.realEstateDeveloperId,
-          officeId: response.user.officeId,
-          employeeId: response.user.employeeId
-        };
+        // Use the user data directly from the response
+        const userData = response.data.user;
         
         dispatch(loginSuccess(userData));
         router.push('/dashboard');
       } else {
         dispatch(loginFailure(response.message || 'Login failed'));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error);
-      dispatch(loginFailure(error.message || 'Network error occurred'));
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      dispatch(loginFailure(errorMessage));
     }
   };
 
@@ -104,6 +103,10 @@ export default function LoginPage() {
                     placeholder="Enter your username"
                     className="pl-10 h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                     {...register('username')}
+                    onChange={(e) => {
+                      register('username').onChange(e);
+                      handleInputChange();
+                    }}
                   />
                 </div>
                 {errors.username && (
@@ -124,6 +127,10 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     className="pl-10 pr-10 h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                     {...register('password')}
+                    onChange={(e) => {
+                      register('password').onChange(e);
+                      handleInputChange();
+                    }}
                   />
                   <button
                     type="button"

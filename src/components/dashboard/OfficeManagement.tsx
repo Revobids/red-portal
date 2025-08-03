@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { setOfficeFormField, resetOfficeForm, addOffice, setOffices, setLoading, setError } from '@/redux/slices/adminSlice';
+import { setOfficeFormField, resetOfficeForm, setOffices, setLoading, setError } from '@/redux/slices/adminSlice';
 import ApiManager from '@/api/ApiManager';
 
 const officeSchema = z.object({
@@ -45,13 +45,13 @@ export default function OfficeManagement() {
     dispatch(setLoading(true));
     
     try {
-      const response: any = await ApiManager.createOffice(data);
+      const response = await ApiManager.createOffice(data);
       
-      if (response.success || response.id || response.data) {
+      if (response.success && response.data) {
         // Refresh the offices list
-        const officesResponse: any = await ApiManager.getOffices();
-        if (officesResponse && Array.isArray(officesResponse.data || officesResponse)) {
-          dispatch(setOffices(officesResponse.data || officesResponse));
+        const officesResponse = await ApiManager.getOffices();
+        if (officesResponse.success && officesResponse.data) {
+          dispatch(setOffices(officesResponse.data));
         }
         
         dispatch(resetOfficeForm());
@@ -61,15 +61,16 @@ export default function OfficeManagement() {
       } else {
         dispatch(setError(response.message || 'Failed to create office'));
       }
-    } catch (error: any) {
-      dispatch(setError(error.message || 'Network error occurred'));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  const handleFormFieldChange = (field: string, value: any) => {
-    dispatch(setOfficeFormField({ field: field as any, value }));
+  const handleFormFieldChange = (field: keyof OfficeFormData, value: string | boolean) => {
+    dispatch(setOfficeFormField({ field, value }));
   };
 
   return (

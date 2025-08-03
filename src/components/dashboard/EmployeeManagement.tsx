@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { setEmployeeFormField, resetEmployeeForm, addEmployee, setEmployees, setLoading, setError } from '@/redux/slices/adminSlice';
+import { setEmployeeFormField, resetEmployeeForm, setEmployees, setLoading, setError } from '@/redux/slices/adminSlice';
 import ApiManager from '@/api/ApiManager';
 
 const employeeSchema = z.object({
@@ -20,7 +20,7 @@ const employeeSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['MANAGER', 'SALES_MANAGER', 'SALES_EXECUTIVE', 'SALES', 'FINANCE']),
+  role: z.enum(['ADMIN', 'MANAGER', 'SALES_MANAGER', 'SALES_EXECUTIVE', 'SALES', 'FINANCE']),
   officeId: z.string().min(1, 'Office is required'),
   employeeId: z.string().optional(),
 });
@@ -54,13 +54,13 @@ export default function EmployeeManagement() {
         role: data.role.toLowerCase()
       };
       
-      const response: any = await ApiManager.createEmployee(apiData);
+      const response = await ApiManager.createEmployee(apiData);
       
-      if (response.success || response.id || response.data) {
+      if (response.success && response.data) {
         // Refresh the employees list
-        const employeesResponse: any = await ApiManager.getEmployees();
-        if (employeesResponse && Array.isArray(employeesResponse.data || employeesResponse)) {
-          dispatch(setEmployees(employeesResponse.data || employeesResponse));
+        const employeesResponse = await ApiManager.getEmployees();
+        if (employeesResponse.success && employeesResponse.data) {
+          dispatch(setEmployees(employeesResponse.data));
         }
         
         dispatch(resetEmployeeForm());
@@ -70,15 +70,16 @@ export default function EmployeeManagement() {
       } else {
         dispatch(setError(response.message || 'Failed to create employee'));
       }
-    } catch (error: any) {
-      dispatch(setError(error.message || 'Network error occurred'));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  const handleFormFieldChange = (field: string, value: any) => {
-    dispatch(setEmployeeFormField({ field: field as any, value }));
+  const handleFormFieldChange = (field: keyof EmployeeFormData, value: string) => {
+    dispatch(setEmployeeFormField({ field, value }));
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -200,7 +201,7 @@ export default function EmployeeManagement() {
                     value={addEmployeeForm.role}
                     onValueChange={(value) => {
                       handleFormFieldChange('role', value);
-                      setValue('role', value as any);
+                      setValue('role', value as 'ADMIN' | 'MANAGER' | 'SALES_MANAGER' | 'SALES_EXECUTIVE' | 'SALES' | 'FINANCE');
                     }}
                   >
                     <SelectTrigger>

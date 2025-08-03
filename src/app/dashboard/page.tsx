@@ -13,11 +13,9 @@ import {
   FolderOpen, 
   BarChart3, 
   LogOut,
-  Plus,
   Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -54,21 +52,21 @@ export default function DashboardPage() {
       if (isAuthenticated && user.id) {
         try {
           // Load offices
-          const officesResponse: any = await ApiManager.getOffices();
-          if (officesResponse && Array.isArray(officesResponse.data || officesResponse)) {
-            dispatch(setOffices(officesResponse.data || officesResponse));
+          const officesResponse = await ApiManager.getOffices();
+          if (officesResponse.success && officesResponse.data) {
+            dispatch(setOffices(officesResponse.data));
           }
 
           // Load employees
-          const employeesResponse: any = await ApiManager.getEmployees();
-          if (employeesResponse && Array.isArray(employeesResponse.data || employeesResponse)) {
-            dispatch(setEmployees(employeesResponse.data || employeesResponse));
+          const employeesResponse = await ApiManager.getEmployees();
+          if (employeesResponse.success && employeesResponse.data) {
+            dispatch(setEmployees(employeesResponse.data));
           }
 
           // Load projects
-          const projectsResponse: any = await ApiManager.getProjects();
-          if (projectsResponse && Array.isArray(projectsResponse.data || projectsResponse)) {
-            dispatch(setProjects(projectsResponse.data || projectsResponse));
+          const projectsResponse = await ApiManager.getProjects();
+          if (projectsResponse.success && projectsResponse.data) {
+            dispatch(setProjects(projectsResponse.data));
           }
         } catch (error) {
           console.error('Failed to load dashboard data:', error);
@@ -86,7 +84,7 @@ export default function DashboardPage() {
   };
 
   const handleTabChange = (value: string) => {
-    dispatch(setSelectedTab(value as any));
+    dispatch(setSelectedTab(value as 'dashboard' | 'offices' | 'employees' | 'projects'));
   };
 
   if (!isAuthenticated) {

@@ -1,10 +1,25 @@
 import ApiMethods from "./ApiMethods";
 import ENDPOINTS from "./endpoints";
+import { Employee, Office, Project, RealEstateDeveloper } from "../types";
 
-const PROD_BASE_URL = 'http://localhost:3000/api/';
+const PROD_BASE_URL = 'https://revobricks-backend-core.onrender.com/';
 const DEV_BASE_URL = 'http://localhost:3000/';
 
-export const BASE_URL = DEV_BASE_URL;
+export const BASE_URL = process.env.NODE_ENV === 'production' ? PROD_BASE_URL : DEV_BASE_URL;
+
+// API Response Types
+interface ApiResponse<T = unknown> {
+    success: boolean;
+    data?: T;
+    message?: string;
+    error?: string;
+}
+
+interface LoginResponse {
+    user: Employee;
+    token: string;
+}
+
 
 interface LoginBody {
     username: string;
@@ -62,12 +77,53 @@ interface ChangePasswordBody {
 interface CreateProjectBody {
     name: string;
     description?: string;
-    location?: any;
-    propertyDetails?: any;
-    approvals?: any;
-    floorPlans?: any;
-    images?: any;
-    brochures?: any;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    projectType: 'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE';
+    propertyType: 'APARTMENT' | 'VILLA' | 'PLOT' | 'OFFICE' | 'SHOP' | 'WAREHOUSE';
+    totalUnits: number;
+    totalArea: number;
+    areaUnit: string;
+    expectedCompletionDate: string;
+    constructionStartDate: string;
+    amenities: string[];
+    amenitiesDescription?: string;
+    reraNumber?: string;
+    reraApprovalDate?: string;
+    reraWebsite?: string;
+    legalDetails?: string;
+    approvals?: {
+        name: string;
+        authority: string;
+        approvalNumber: string;
+        approvalDate: string;
+    }[];
+    minPrice?: number;
+    maxPrice?: number;
+    currency?: string;
+    floorPlans?: {
+        type: string;
+        area: number;
+        areaUnit: string;
+        bedrooms: number;
+        bathrooms: number;
+        price: number;
+    }[];
+    images?: {
+        url: string;
+        type: string;
+        caption: string;
+    }[];
+    brochures?: {
+        url: string;
+        name: string;
+    }[];
+    projectManagerId: string;
+    salesManagerId: string;
 }
 
 interface AssignEmployeeBody {
@@ -76,249 +132,247 @@ interface AssignEmployeeBody {
     assignedDate?: Date;
 }
 
+interface UpdateProjectBody {
+    name?: string;
+    description?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
+    projectType?: 'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE';
+    propertyType?: 'APARTMENT' | 'VILLA' | 'PLOT' | 'OFFICE' | 'SHOP' | 'WAREHOUSE';
+    totalUnits?: number;
+    totalArea?: number;
+    areaUnit?: string;
+    expectedCompletionDate?: string;
+    constructionStartDate?: string;
+    amenities?: string[];
+    amenitiesDescription?: string;
+    reraNumber?: string;
+    reraApprovalDate?: string;
+    reraWebsite?: string;
+    legalDetails?: string;
+    approvals?: {
+        name: string;
+        authority: string;
+        approvalNumber: string;
+        approvalDate: string;
+    }[];
+    minPrice?: number;
+    maxPrice?: number;
+    currency?: string;
+    floorPlans?: {
+        type: string;
+        area: number;
+        areaUnit: string;
+        bedrooms: number;
+        bathrooms: number;
+        price: number;
+    }[];
+    images?: {
+        url: string;
+        type: string;
+        caption: string;
+    }[];
+    brochures?: {
+        url: string;
+        name: string;
+    }[];
+    status?: 'UNPUBLISHED' | 'PUBLISHED';
+}
+
 interface PublishProjectBody {
     status: string;
+}
+
+interface UploadImageBody {
+    imageType: 'EXTERIOR' | 'INTERIOR' | 'FLOOR_PLAN' | 'AMENITY' | 'LOCATION' | 'CONSTRUCTION' | 'OTHER';
+    caption?: string;
+}
+
+interface DeleteImageBody {
+    imageUrl: string;
 }
 
 class ApiManager {
 
     // Authentication
-    static login = (loginData: LoginBody) => {
+    static login = (loginData: LoginBody): Promise<ApiResponse<LoginResponse>> => {
         const url = BASE_URL + ENDPOINTS.LOGIN();
-        return ApiMethods.post(url, loginData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<LoginResponse>>(url, loginData as unknown as Record<string, unknown>);
     };
 
-    static register = (registerData: RegisterBody) => {
+    static register = (registerData: RegisterBody): Promise<ApiResponse<Employee>> => {
         const url = BASE_URL + ENDPOINTS.REGISTER();
-        return ApiMethods.post(url, registerData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<Employee>>(url, registerData as unknown as Record<string, unknown>);
     };
 
     // Real Estate Developers
-    static createDeveloper = (developerData: CreateDeveloperBody) => {
+    static createDeveloper = (developerData: CreateDeveloperBody): Promise<ApiResponse<RealEstateDeveloper>> => {
         const url = BASE_URL + ENDPOINTS.CREATE_DEVELOPER();
-        return ApiMethods.post(url, developerData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<RealEstateDeveloper>>(url, developerData as unknown as Record<string, unknown>);
     };
 
-    static getDevelopers = () => {
+    static getDevelopers = (): Promise<ApiResponse<RealEstateDeveloper[]>> => {
         const url = BASE_URL + ENDPOINTS.GET_DEVELOPERS();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<RealEstateDeveloper[]>>(url);
     };
 
-    static getDeveloper = (id: string) => {
+    static getDeveloper = (id: string): Promise<ApiResponse<RealEstateDeveloper>> => {
         const url = BASE_URL + ENDPOINTS.GET_DEVELOPER(id);
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<RealEstateDeveloper>>(url);
     };
 
-    static updateDeveloper = (id: string, updateData: Partial<CreateDeveloperBody>) => {
+    static updateDeveloper = (id: string, updateData: Partial<CreateDeveloperBody>): Promise<ApiResponse<RealEstateDeveloper>> => {
         const url = BASE_URL + ENDPOINTS.UPDATE_DEVELOPER(id);
-        return ApiMethods.patch(url, updateData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.patch<ApiResponse<RealEstateDeveloper>>(url, updateData as unknown as Record<string, unknown>);
     };
 
-    static deleteDeveloper = (id: string) => {
+    static deleteDeveloper = (id: string): Promise<ApiResponse<void>> => {
         const url = BASE_URL + ENDPOINTS.DELETE_DEVELOPER(id);
-        return ApiMethods.delete(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.delete<ApiResponse<void>>(url);
     };
 
     // Office Management
-    static createOffice = (officeData: CreateOfficeBody) => {
+    static createOffice = (officeData: CreateOfficeBody): Promise<ApiResponse<Office>> => {
         const url = BASE_URL + ENDPOINTS.CREATE_OFFICE();
-        return ApiMethods.post(url, officeData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<Office>>(url, officeData as unknown as Record<string, unknown>);
     };
 
-    static getOffices = () => {
+    static getOffices = (): Promise<ApiResponse<Office[]>> => {
         const url = BASE_URL + ENDPOINTS.GET_OFFICES();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Office[]>>(url);
     };
 
-    static getOffice = (id: string) => {
+    static getOffice = (id: string): Promise<ApiResponse<Office>> => {
         const url = BASE_URL + ENDPOINTS.GET_OFFICE(id);
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Office>>(url);
     };
 
-    static updateOffice = (id: string, updateData: Partial<CreateOfficeBody>) => {
+    static updateOffice = (id: string, updateData: Partial<CreateOfficeBody>): Promise<ApiResponse<Office>> => {
         const url = BASE_URL + ENDPOINTS.UPDATE_OFFICE(id);
-        return ApiMethods.patch(url, updateData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.patch<ApiResponse<Office>>(url, updateData as unknown as Record<string, unknown>);
     };
 
-    static deleteOffice = (id: string) => {
+    static deleteOffice = (id: string): Promise<ApiResponse<void>> => {
         const url = BASE_URL + ENDPOINTS.DELETE_OFFICE(id);
-        return ApiMethods.delete(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.delete<ApiResponse<void>>(url);
     };
 
     // Employee Management
-    static createEmployee = (employeeData: CreateEmployeeBody) => {
+    static createEmployee = (employeeData: CreateEmployeeBody): Promise<ApiResponse<Employee>> => {
         const url = BASE_URL + ENDPOINTS.CREATE_EMPLOYEE();
-        return ApiMethods.post(url, employeeData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<Employee>>(url, employeeData as unknown as Record<string, unknown>);
     };
 
-    static getEmployees = () => {
+    static getEmployees = (): Promise<ApiResponse<Employee[]>> => {
         const url = BASE_URL + ENDPOINTS.GET_EMPLOYEES();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Employee[]>>(url);
     };
 
-    static getEmployee = (id: string) => {
+    static getEmployee = (id: string): Promise<ApiResponse<Employee>> => {
         const url = BASE_URL + ENDPOINTS.GET_EMPLOYEE(id);
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Employee>>(url);
     };
 
-    static updateEmployee = (id: string, updateData: Partial<CreateEmployeeBody>) => {
+    static updateEmployee = (id: string, updateData: Partial<CreateEmployeeBody>): Promise<ApiResponse<Employee>> => {
         const url = BASE_URL + ENDPOINTS.UPDATE_EMPLOYEE(id);
-        return ApiMethods.patch(url, updateData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.patch<ApiResponse<Employee>>(url, updateData as unknown as Record<string, unknown>);
     };
 
-    static deleteEmployee = (id: string) => {
+    static deleteEmployee = (id: string): Promise<ApiResponse<void>> => {
         const url = BASE_URL + ENDPOINTS.DELETE_EMPLOYEE(id);
-        return ApiMethods.delete(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.delete<ApiResponse<void>>(url);
     };
 
-    static changePassword = (passwordData: ChangePasswordBody) => {
+    static changePassword = (passwordData: ChangePasswordBody): Promise<ApiResponse<{ message: string }>> => {
         const url = BASE_URL + ENDPOINTS.CHANGE_PASSWORD();
-        return ApiMethods.post(url, passwordData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<{ message: string }>>(url, passwordData as unknown as Record<string, unknown>);
     };
 
     // Project Management
-    static createProject = (projectData: CreateProjectBody) => {
+    static createProject = (projectData: CreateProjectBody): Promise<ApiResponse<Project>> => {
         const url = BASE_URL + ENDPOINTS.CREATE_PROJECT();
-        return ApiMethods.post(url, projectData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<Project>>(url, projectData as unknown as Record<string, unknown>);
     };
 
-    static getProjects = () => {
+    static getProjects = (): Promise<ApiResponse<Project[]>> => {
         const url = BASE_URL + ENDPOINTS.GET_PROJECTS();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Project[]>>(url);
     };
 
-    static getPublishedProjects = () => {
+    static getPublishedProjects = (): Promise<ApiResponse<Project[]>> => {
         const url = BASE_URL + ENDPOINTS.GET_PUBLISHED_PROJECTS();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Project[]>>(url);
     };
 
-    static getProject = (id: string) => {
+    static getProject = (id: string): Promise<ApiResponse<Project>> => {
         const url = BASE_URL + ENDPOINTS.GET_PROJECT(id);
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Project>>(url);
     };
 
-    static updateProject = (id: string, updateData: Partial<CreateProjectBody>) => {
+    static updateProject = (id: string, updateData: UpdateProjectBody): Promise<ApiResponse<Project>> => {
         const url = BASE_URL + ENDPOINTS.UPDATE_PROJECT(id);
-        return ApiMethods.patch(url, updateData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.patch<ApiResponse<Project>>(url, updateData as unknown as Record<string, unknown>);
     };
 
-    static publishProject = (id: string, publishData: PublishProjectBody) => {
+    static publishProject = (id: string, publishData: PublishProjectBody): Promise<ApiResponse<Project>> => {
         const url = BASE_URL + ENDPOINTS.PUBLISH_PROJECT(id);
-        return ApiMethods.patch(url, publishData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.patch<ApiResponse<Project>>(url, publishData as unknown as Record<string, unknown>);
     };
 
-    static assignEmployeeToProject = (id: string, employeeData: AssignEmployeeBody) => {
+    static assignEmployeeToProject = (id: string, employeeData: AssignEmployeeBody): Promise<ApiResponse<Project>> => {
         const url = BASE_URL + ENDPOINTS.ASSIGN_EMPLOYEE_TO_PROJECT(id);
-        return ApiMethods.post(url, employeeData).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.post<ApiResponse<Project>>(url, employeeData as unknown as Record<string, unknown>);
     };
 
-    static removeEmployeeFromProject = (id: string, employeeId: string) => {
+    static removeEmployeeFromProject = (id: string, employeeId: string): Promise<ApiResponse<Project>> => {
         const url = BASE_URL + ENDPOINTS.REMOVE_EMPLOYEE_FROM_PROJECT(id, employeeId);
-        return ApiMethods.delete(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.delete<ApiResponse<Project>>(url);
     };
 
-    static deleteProject = (id: string) => {
-        const url = BASE_URL + ENDPOINTS.DELETE_PROJECT(id);
-        return ApiMethods.delete(url).then((res: any) => {
-            console.log(res);
-            return res;
+    static uploadProjectImages = (id: string, files: File[], metadata: UploadImageBody[]): Promise<ApiResponse<Project>> => {
+        const url = BASE_URL + ENDPOINTS.UPLOAD_PROJECT_IMAGES(id);
+        const formData = new FormData();
+        
+        // Add files to form data
+        files.forEach((file) => {
+            formData.append('images', file);
         });
+        
+        // Add metadata for each file
+        metadata.forEach((meta, index) => {
+            formData.append(`imageType[${index}]`, meta.imageType);
+            if (meta.caption) {
+                formData.append(`caption[${index}]`, meta.caption);
+            }
+        });
+        
+        return ApiMethods.postFormData<ApiResponse<Project>>(url, formData);
+    };
+
+    static deleteProjectImage = (id: string, deleteData: DeleteImageBody): Promise<ApiResponse<Project>> => {
+        const url = BASE_URL + ENDPOINTS.DELETE_PROJECT_IMAGE(id);
+        return ApiMethods.delete<ApiResponse<Project>>(url, deleteData as unknown as Record<string, unknown>);
+    };
+
+    static deleteProject = (id: string): Promise<ApiResponse<void>> => {
+        const url = BASE_URL + ENDPOINTS.DELETE_PROJECT(id);
+        return ApiMethods.delete<ApiResponse<void>>(url);
     };
 
     // Health Check
-    static healthCheck = () => {
+    static healthCheck = (): Promise<ApiResponse<{ status: string; timestamp: string }>> => {
         const url = BASE_URL + ENDPOINTS.HEALTH_CHECK();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<{ status: string; timestamp: string }>>(url);
     };
 
     // User Profile
-    static getUserInfo = () => {
+    static getUserInfo = (): Promise<ApiResponse<Employee>> => {
         const url = BASE_URL + ENDPOINTS.GET_USER_PROFILE();
-        return ApiMethods.get(url).then((res: any) => {
-            console.log(res);
-            return res;
-        });
+        return ApiMethods.get<ApiResponse<Employee>>(url);
     };
 
 }

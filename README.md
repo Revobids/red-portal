@@ -57,6 +57,35 @@ The application automatically switches between development and production API en
 - `npm run start` - Start production server (SSR mode)
 - `npm run lint` - Run ESLint
 
+## Deployment
+
+### Deploy to Vercel (Recommended)
+
+Since your GitHub repository is already linked to Vercel:
+
+1. **Automatic Deployment**: 
+   - Push your changes to the `main` branch (already done!)
+   - Vercel will automatically detect the changes and deploy
+
+2. **Manual Deployment via Vercel Dashboard**:
+   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Find your `red-portal` project
+   - Click "Deploy" or wait for automatic deployment
+
+3. **Vercel Configuration** (already configured):
+   - Build Command: `npm run build`
+   - Output Directory: `out`
+   - Framework Preset: Next.js (Static)
+
+### Deploy to Other Platforms
+
+The static files in the `out/` directory can be deployed to:
+
+- **Netlify**: Drag and drop the `out/` folder
+- **GitHub Pages**: Copy `out/` contents to your Pages repository
+- **AWS S3**: Upload `out/` contents to an S3 bucket
+- **Any Static Host**: Upload the `out/` directory contents
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

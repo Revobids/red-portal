@@ -8,7 +8,7 @@ A Next.js real estate management portal built with TypeScript, Tailwind CSS, and
 - 👥 Employee Management  
 - 🏗️ Project Management
 - 🔐 Authentication & Authorization
-- Vercel
+- Vercel out
 - 📱 Responsive Design
 - 🎨 Modern UI with Tailwind CSS
 

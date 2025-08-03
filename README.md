@@ -1,24 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Red Portal
+
+A Next.js real estate management portal built with TypeScript, Tailwind CSS, and Redux Toolkit.
+
+## Features
+
+- 🏢 Office Management
+- 👥 Employee Management  
+- 🏗️ Project Management
+- 🔐 Authentication & Authorization
+- 📱 Responsive Design
+- 🎨 Modern UI with Tailwind CSS
 
 ## Getting Started
 
-First, run the development server:
+### Development
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Static Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Generate a static build for deployment:
+
+```bash
+npm run build
+```
+
+This will create an optimized static build in the `out/` directory.
+
+### Serve Static Files Locally
+
+To test the static build locally:
+
+```bash
+npm run serve-static
+```
+
+## Environment Configuration
+
+The application automatically switches between development and production API endpoints:
+
+- **Development**: `http://localhost:3000/`
+- **Production**: `https://revobricks-backend-core.onrender.com/`
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build and export static files
+- `npm run static` - Alias for build (static export)
+- `npm run serve-static` - Serve static files locally
+- `npm run start` - Start production server (SSR mode)
+- `npm run lint` - Run ESLint
 
 ## Learn More
 

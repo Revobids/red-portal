@@ -2,7 +2,7 @@ import ApiMethods from "./ApiMethods";
 import ENDPOINTS from "./endpoints";
 import { Employee, Office, Project, RealEstateDeveloper } from "../types";
 
-const PROD_BASE_URL = 'https://revobricks-backend-core.onrender.com/api';
+const PROD_BASE_URL = 'https://revobricks-backend-core.onrender.com/api/';
 const DEV_BASE_URL = 'https://revobricks-backend-core.onrender.com/api/';
 
 export const BASE_URL = process.env.NODE_ENV === 'production' ? PROD_BASE_URL : DEV_BASE_URL;

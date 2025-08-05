@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { logout } from '@/redux/slices/authSlice';
 import { setSelectedTab, setOffices, setEmployees, setProjects } from '@/redux/slices/adminSlice';
 import { useAuthInit } from '@/hooks/useAuth';
+import { getCookieValue } from '@/lib/auth';
 import ApiManager from '@/api/ApiManager';
 import { 
   Building2, 
@@ -36,14 +37,18 @@ export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const { selectedTab } = useAppSelector((state) => state.admin);
-
-  // Initialize auth state from cookies
-  useAuthInit();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
+    // Give time for auth state to initialize
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      if (!isAuthenticated && !getCookieValue('access_token')) {
+        router.push('/login');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
   // Load initial data when authenticated
@@ -88,8 +93,12 @@ export default function DashboardPage() {
     dispatch(setSelectedTab(value as 'dashboard' | 'offices' | 'employees' | 'projects'));
   };
 
-  if (!isAuthenticated) {
-    return null;
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (

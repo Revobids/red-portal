@@ -2,10 +2,10 @@ import ApiMethods from "./ApiMethods";
 import ENDPOINTS from "./endpoints";
 import { Employee, Office, Project, RealEstateDeveloper } from "../types";
 
-const PROD_BASE_URL = 'https://revobricks-backend-core.onrender.com/api/';
-const DEV_BASE_URL = 'https://revobricks-backend-core.onrender.com/api/';
-
-export const BASE_URL = process.env.NODE_ENV === 'production' ? PROD_BASE_URL : DEV_BASE_URL;
+// Use environment variable for API URL, fallback to default if not set
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://revobricks-backend-core.onrender.com/api';
+// Ensure BASE_URL always ends with a slash
+export const BASE_URL = API_URL.endsWith('/') ? API_URL : API_URL + '/';
 
 // API Response Types
 interface ApiResponse<T = unknown> {

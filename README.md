@@ -44,10 +44,19 @@ npm run serve-static
 
 ## Environment Configuration
 
-The application automatically switches between development and production API endpoints:
+The application uses environment variables to configure the API endpoint. Create the following files:
 
-- **Development**: `http://localhost:3000/`
-- **Production**: `https://revobricks-backend-core.onrender.com/`
+### `.env.local` (for local development)
+```
+NEXT_PUBLIC_API_URL=https://revobricks-backend-core.onrender.com/api
+```
+
+### `.env.production` (for production builds)
+```
+NEXT_PUBLIC_API_URL=https://revobricks-backend-core.onrender.com/api
+```
+
+You can update these URLs to point to different API endpoints as needed.
 
 ## Available Scripts
 

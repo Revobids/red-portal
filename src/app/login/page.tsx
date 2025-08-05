@@ -49,13 +49,20 @@ export default function LoginPage() {
       const response = await ApiManager.login(data);
       console.log('Login response:', response);
       
-      if (response.success && response.data) {
+      // Check if response has accessToken and employee (actual API response structure)
+      if ((response as any).accessToken && (response as any).employee) {
         // Store token in cookie
+        document.cookie = `access_token=${(response as any).accessToken}; path=/; max-age=86400`;
+        
+        // Use the employee data directly from the response
+        const userData = (response as any).employee;
+        
+        dispatch(loginSuccess(userData));
+        router.push('/dashboard');
+      } else if (response.success && response.data) {
+        // Fallback to expected structure
         document.cookie = `access_token=${response.data.token}; path=/; max-age=86400`;
-        
-        // Use the user data directly from the response
         const userData = response.data.user;
-        
         dispatch(loginSuccess(userData));
         router.push('/dashboard');
       } else {

@@ -505,7 +505,7 @@ export default function ProjectManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         {availableManagers.length === 0 ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="no-managers" disabled>
                             No employees available
                           </SelectItem>
                         ) : (
@@ -534,7 +534,7 @@ export default function ProjectManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         {availableManagers.length === 0 ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="no-managers" disabled>
                             No employees available
                           </SelectItem>
                         ) : (

@@ -80,6 +80,7 @@ export default function DashboardPage() {
   const handleLogout = () => {
     dispatch(logout());
     document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.removeItem('user_data');
     router.push('/login');
   };
 

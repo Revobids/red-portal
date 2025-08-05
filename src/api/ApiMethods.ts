@@ -15,10 +15,8 @@ const getFileHeaders = () => {
 
 const responseMiddleware = <T = unknown>(response: T): T => {
     console.log("middleware response:", response);
-    // Only logout if we get a 401 statusCode in the response body
-    if ((response as Record<string, unknown>).statusCode === 401) {
-        logoutUser();
-    }
+    // Don't automatically logout on 401 - let the application handle auth errors
+    // This prevents unnecessary logouts on single API failures
     return response;
 };
 

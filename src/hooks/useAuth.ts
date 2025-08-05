@@ -15,24 +15,30 @@ export const useAuthInit = () => {
         const token = getCookieValue('access_token');
         if (token) {
           try {
-            // Decode JWT payload to get user info (basic implementation)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const userData = {
-              id: payload.userId || '1',
-              username: payload.username || 'user',
-              name: payload.username || 'User',
-              email: 'user@example.com',
-              role: (payload.role?.toUpperCase() || 'MANAGER') as 'ADMIN' | 'MANAGER' | 'SALES_MANAGER' | 'SALES_EXECUTIVE' | 'SALES' | 'FINANCE',
-              realEstateDeveloperId: '1',
-              officeId: '1',
-              employeeId: payload.userId || '1'
-            };
-            
-            dispatch(loginSuccess(userData));
+            // First try to get user data from localStorage
+            const storedUserData = localStorage.getItem('user_data');
+            if (storedUserData) {
+              const userData = JSON.parse(storedUserData);
+              dispatch(loginSuccess(userData));
+            } else {
+              // Fallback: decode JWT payload to get basic user info
+              const payload = JSON.parse(atob(token.split('.')[1]));
+              const userData = {
+                id: payload.userId || '1',
+                username: payload.username || 'user',
+                name: payload.username || 'User',
+                email: 'user@example.com',
+                role: (payload.role?.toUpperCase() || 'MANAGER') as 'ADMIN' | 'MANAGER' | 'SALES_MANAGER' | 'SALES_EXECUTIVE' | 'SALES' | 'FINANCE',
+                realEstateDeveloperId: '1',
+                officeId: '1',
+                employeeId: payload.userId || '1'
+              };
+              dispatch(loginSuccess(userData));
+            }
           } catch (error) {
             console.error('Auth initialization failed:', error);
-            // Token might be invalid, clear it
-            document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            // Don't automatically clear the token - let the user stay logged in
+            // The token validation should happen on API calls
           }
         }
       }

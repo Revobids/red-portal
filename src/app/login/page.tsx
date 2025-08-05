@@ -57,6 +57,9 @@ export default function LoginPage() {
         // Use the employee data directly from the response
         const userData = (response as any).employee;
         
+        // Store user data in localStorage for persistence
+        localStorage.setItem('user_data', JSON.stringify(userData));
+        
         dispatch(loginSuccess(userData));
         router.push('/dashboard');
       } else if (response.success && response.data) {

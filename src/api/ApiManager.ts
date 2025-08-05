@@ -188,7 +188,7 @@ interface PublishProjectBody {
 }
 
 interface UploadImageBody {
-    imageType: 'EXTERIOR' | 'INTERIOR' | 'FLOOR_PLAN' | 'AMENITY' | 'LOCATION' | 'CONSTRUCTION' | 'OTHER';
+    type?: 'EXTERIOR' | 'INTERIOR' | 'FLOOR_PLAN' | 'AMENITY' | 'LOCATION' | 'CONSTRUCTION' | 'OTHER';
     caption?: string;
 }
 
@@ -313,9 +313,9 @@ class ApiManager {
         return ApiMethods.get<ApiResponse<Project>>(url);
     };
 
-    static updateProject = (id: string, updateData: UpdateProjectBody): Promise<ApiResponse<Project>> => {
+    static updateProject = (id: string, updateData: UpdateProjectBody): Promise<any> => {
         const url = BASE_URL + ENDPOINTS.UPDATE_PROJECT(id);
-        return ApiMethods.patch<ApiResponse<Project>>(url, updateData as unknown as Record<string, unknown>);
+        return ApiMethods.patch<any>(url, updateData as unknown as Record<string, unknown>);
     };
 
     static publishProject = (id: string, publishData: PublishProjectBody): Promise<ApiResponse<Project>> => {
@@ -333,29 +333,37 @@ class ApiManager {
         return ApiMethods.delete<ApiResponse<Project>>(url);
     };
 
-    static uploadProjectImages = (id: string, files: File[], metadata: UploadImageBody[]): Promise<ApiResponse<Project>> => {
+    static uploadProjectImages = (id: string, files: File[], metadata?: UploadImageBody): Promise<any[]> => {
         const url = BASE_URL + ENDPOINTS.UPLOAD_PROJECT_IMAGES(id);
         const formData = new FormData();
         
-        // Add files to form data
+        // Add files to form data with exact field name expected by backend
         files.forEach((file) => {
             formData.append('images', file);
         });
         
-        // Add metadata for each file
-        metadata.forEach((meta, index) => {
-            formData.append(`imageType[${index}]`, meta.imageType);
-            if (meta.caption) {
-                formData.append(`caption[${index}]`, meta.caption);
+        // Add metadata fields if provided (applies to all images)
+        if (metadata) {
+            if (metadata.type) {
+                formData.append('type', metadata.type);
             }
-        });
+            if (metadata.caption) {
+                formData.append('caption', metadata.caption);
+            }
+        }
         
-        return ApiMethods.postFormData<ApiResponse<Project>>(url, formData);
+        console.log('Uploading', files.length, 'files to:', url);
+        console.log('FormData contents:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ':', pair[1]);
+        }
+        
+        return ApiMethods.postFormData<any[]>(url, formData);
     };
 
-    static deleteProjectImage = (id: string, deleteData: DeleteImageBody): Promise<ApiResponse<Project>> => {
+    static deleteProjectImage = (id: string, deleteData: DeleteImageBody): Promise<any> => {
         const url = BASE_URL + ENDPOINTS.DELETE_PROJECT_IMAGE(id);
-        return ApiMethods.delete<ApiResponse<Project>>(url, deleteData as unknown as Record<string, unknown>);
+        return ApiMethods.delete<any>(url, deleteData as unknown as Record<string, unknown>);
     };
 
     static deleteProject = (id: string): Promise<ApiResponse<void>> => {

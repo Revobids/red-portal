@@ -1,10 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, FolderOpen, Calendar, Eye, Edit, X } from 'lucide-react';
+import { 
+  Plus, 
+  FolderOpen, 
+  Calendar, 
+  Eye, 
+  Edit, 
+  X, 
+  MoreHorizontal,
+  Trash2,
+  Users,
+  Building2,
+  MapPin,
+  Badge as BadgeIcon,
+  CheckCircle,
+  XCircle,
+  Search,
+  Filter,
+  Image as ImageIcon
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,8 +34,26 @@ import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { setProjectFormField, resetProjectForm, setProjects, setLoading, setError } from '@/redux/slices/adminSlice';
 import ApiManager from '@/api/ApiManager';
 import EditProjectModal from './EditProjectModal';
-import ImageUpload, { ImageData } from '@/components/ui/image-upload';
+import CreateProjectWizard from './CreateProjectWizard';
+import ProjectImageModal from './ProjectImageModal';
 import { Project } from '@/types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -63,12 +99,37 @@ type ProjectFormData = z.infer<typeof projectSchema>;
 
 export default function ProjectManagement() {
   const [showForm, setShowForm] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'PUBLISHED' | 'UNPUBLISHED'>('all');
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState(false);
   const [amenityInput, setAmenityInput] = useState('');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [projectImages, setProjectImages] = useState<ImageData[]>([]);
+  const [imageProject, setImageProject] = useState<Project | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
   const dispatch = useAppDispatch();
   const { addProjectForm, projects, employees, isLoading } = useAppSelector((state) => state.admin);
+
+  // Load projects on mount
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = async () => {
+    dispatch(setLoading(true));
+    try {
+      const response = await ApiManager.getProjects();
+      if (response.success && response.data) {
+        dispatch(setProjects(response.data));
+      }
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
   const {
     register,
@@ -137,25 +198,6 @@ export default function ProjectManagement() {
       if (response.success && response.data) {
         const projectId = response.data.id;
         
-        // Upload images if any
-        if (projectImages.length > 0 && projectId) {
-          try {
-            const imagesToUpload = projectImages.filter(img => img.file);
-            if (imagesToUpload.length > 0) {
-              const files = imagesToUpload.map(img => img.file!);
-              const metadata = imagesToUpload.map(img => ({
-                imageType: img.type,
-                caption: img.caption
-              }));
-              
-              await ApiManager.uploadProjectImages(projectId, files, metadata);
-            }
-          } catch (imageError) {
-            console.error('Image upload error:', imageError);
-            // Don't fail the whole operation for image upload errors
-          }
-        }
-        
         // Refresh the projects list
         const projectsResponse = await ApiManager.getProjects();
         if (projectsResponse.success && projectsResponse.data) {
@@ -164,16 +206,19 @@ export default function ProjectManagement() {
         
         dispatch(resetProjectForm());
         reset();
-        setProjectImages([]);
         setShowForm(false);
         dispatch(setError(null));
+        toast.success('Project created successfully');
       } else {
-        dispatch(setError(response.message || 'Failed to create project'));
+        const errorMessage = response.message || 'Failed to create project';
+        dispatch(setError(errorMessage));
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Project creation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
       dispatch(setError(errorMessage));
+      toast.error(errorMessage);
     } finally {
       dispatch(setLoading(false));
     }
@@ -210,34 +255,187 @@ export default function ProjectManagement() {
   console.log('Available managers for dropdown:', availableManagers.map(emp => ({ name: emp.name, role: emp.role })));
 
   const handleEditProject = (project: Project) => {
-    setEditingProject(project);
+    // Find the latest version of the project from the store
+    const latestProject = projects.find(p => p.id === project.id) || project;
+    setEditingProject(latestProject);
     setShowEditModal(true);
   };
 
+  const handleManageImages = (project: Project) => {
+    // Find the latest version of the project from the store
+    const latestProject = projects.find(p => p.id === project.id) || project;
+    setImageProject(latestProject);
+    setShowImageModal(true);
+  };
+
   const handleEditSuccess = async () => {
-    // Refresh the projects list
-    const projectsResponse = await ApiManager.getProjects();
-    if (projectsResponse.success && projectsResponse.data) {
-      dispatch(setProjects(projectsResponse.data));
-    }
+    await loadProjects();
     setEditingProject(null);
     setShowEditModal(false);
   };
 
+  const handleCreateSuccess = async () => {
+    await loadProjects();
+    setShowWizard(false);
+  };
+
+  const handleImageSuccess = async () => {
+    await loadProjects();
+    setImageProject(null);
+    setShowImageModal(false);
+  };
+
+  const handlePublishToggle = async (project: Project) => {
+    dispatch(setLoading(true));
+    try {
+      const newStatus = project.status === 'PUBLISHED' ? 'UNPUBLISHED' : 'PUBLISHED';
+      const response = await ApiManager.publishProject(project.id, { status: newStatus });
+      
+      if (response.success) {
+        await loadProjects();
+        const action = newStatus === 'PUBLISHED' ? 'published' : 'unpublished';
+        toast.success(`Project ${action} successfully`);
+      } else {
+        const errorMessage = response.message || 'Failed to update project status';
+        dispatch(setError(errorMessage));
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Publish toggle error:', error);
+      const errorMessage = 'Failed to update project status';
+      dispatch(setError(errorMessage));
+      toast.error(errorMessage);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    setDeletingProject(true);
+    try {
+      const response = await ApiManager.deleteProject(projectToDelete.id);
+      
+      if (response.success) {
+        await loadProjects();
+        toast.success(`Project "${projectToDelete.name}" deleted successfully`);
+        setProjectToDelete(null);
+      } else {
+        const errorMessage = response.message || 'Failed to delete project';
+        dispatch(setError(errorMessage));
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Delete project error:', error);
+      const errorMessage = 'Failed to delete project';
+      dispatch(setError(errorMessage));
+      toast.error(errorMessage);
+    } finally {
+      setDeletingProject(false);
+    }
+  };
+
+  const handleViewProject = (project: Project) => {
+    // TODO: Navigate to project details page
+    console.log('View project:', project);
+  };
+
+  // Filter projects based on search and status
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.state?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Project Management</h2>
           <p className="text-slate-600">Manage your real estate projects and listings</p>
         </div>
         <Button 
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => setShowWizard(true)}
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Project
         </Button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search projects by name, city, or state..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Projects</SelectItem>
+            <SelectItem value="PUBLISHED">Published</SelectItem>
+            <SelectItem value="UNPUBLISHED">Unpublished</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Project Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Projects</p>
+                <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
+              </div>
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Published</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {projects.filter(p => p.status === 'PUBLISHED').length}
+                </p>
+              </div>
+              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Draft</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {projects.filter(p => p.status === 'UNPUBLISHED').length}
+                </p>
+              </div>
+              <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <XCircle className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Add Project Form */}
@@ -703,15 +901,7 @@ export default function ProjectManagement() {
                 </div>
               </div>
 
-              {/* Project Images */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-900">Project Images (Optional)</h3>
-                <ImageUpload
-                  images={projectImages}
-                  onImagesChange={setProjectImages}
-                  maxImages={10}
-                />
-              </div>
+              {/* Images are now managed through the wizard and separate modal */}
 
               <div className="flex gap-3 pt-4">
                 <Button type="submit" disabled={isLoading || addProjectForm.amenities.filter(a => a.trim() !== '').length === 0}>
@@ -734,59 +924,137 @@ export default function ProjectManagement() {
         </Card>
       )}
 
-      {/* Projects Grid - simplified for now */}
+      {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <FolderOpen className="h-16 w-16 mx-auto mb-4 text-slate-300" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">No projects yet</h3>
             <p className="text-slate-600 mb-4">Create your first project to get started</p>
-            <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+            <Button onClick={() => setShowWizard(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Create Your First Project
             </Button>
           </div>
         ) : (
-          projects.map((project, index) => (
-            <Card key={index} className="hover:shadow-md transition-shadow">
+          filteredProjects.map((project) => (
+            <Card key={project.id} className="hover:shadow-lg transition-all duration-200 group">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <FolderOpen className="h-5 w-5 text-blue-600" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="text-lg line-clamp-1">{project.name}</CardTitle>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewProject(project)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Project
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePublishToggle(project)}>
+                            <BadgeIcon className="h-4 w-4 mr-2" />
+                            {project.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleManageImages(project)}>
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Manage Images
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setProjectToDelete(project)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Project
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{project.name}</CardTitle>
-                      <div className="mt-1">
-                        <Badge 
-                          className={
-                            project.status === 'PUBLISHED' 
-                              ? 'bg-green-100 text-green-700' 
-                              : 'bg-orange-100 text-orange-700'
-                          }
-                        >
-                          {project.status === 'PUBLISHED' ? 'Published' : 'Draft'}
-                        </Badge>
-                      </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge 
+                        variant={project.status === 'PUBLISHED' ? 'default' : 'secondary'}
+                        className={cn(
+                          project.status === 'PUBLISHED' 
+                            ? 'bg-green-100 text-green-700 hover:bg-green-100' 
+                            : 'bg-orange-100 text-orange-700 hover:bg-orange-100'
+                        )}
+                      >
+                        {project.status === 'PUBLISHED' ? 'Published' : 'Draft'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {project.projectType.replace('_', ' ')}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {project.propertyType}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               
               <CardContent className="space-y-4">
-                {project.description && (
-                  <p className="text-sm text-slate-600 line-clamp-3">
-                    {project.description}
-                  </p>
+                {/* Project Image */}
+                {project.images && project.images.length > 0 && (
+                  <div className="relative h-48 -mx-6 -mt-2 mb-4">
+                    <img
+                      src={project.images[0].url}
+                      alt={project.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  </div>
                 )}
 
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created recently</span>
+                {/* Location */}
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span className="line-clamp-1">{project.city}, {project.state}</span>
                 </div>
 
+                {/* Project Info */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Total Units</p>
+                    <p className="font-semibold">{project.totalUnits}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Total Area</p>
+                    <p className="font-semibold">{project.totalArea} {project.areaUnit}</p>
+                  </div>
+                </div>
+
+                {/* Completion Date */}
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>Expected by {new Date(project.expectedCompletionDate).toLocaleDateString()}</span>
+                </div>
+
+                {/* Price Range */}
+                {project.minPrice && project.maxPrice && (
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-gray-500">Price Range</p>
+                    <p className="font-semibold">
+                      {project.currency} {project.minPrice.toLocaleString()} - {project.maxPrice.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleViewProject(project)}
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     View
                   </Button>
@@ -806,8 +1074,17 @@ export default function ProjectManagement() {
         )}
       </div>
 
+      {/* Create Project Wizard */}
+      {showWizard && (
+        <CreateProjectWizard
+          onClose={() => setShowWizard(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      )}
+
       {/* Edit Project Modal */}
       <EditProjectModal
+        key={editingProject?.id || 'edit-modal'}
         project={editingProject}
         isOpen={showEditModal}
         onClose={() => {
@@ -816,6 +1093,45 @@ export default function ProjectManagement() {
         }}
         onSuccess={handleEditSuccess}
       />
+
+      {/* Project Image Management Modal */}
+      <ProjectImageModal
+        project={imageProject}
+        isOpen={showImageModal}
+        onClose={() => {
+          setImageProject(null);
+          setShowImageModal(false);
+        }}
+        onSuccess={handleImageSuccess}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Project</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setProjectToDelete(null)}
+              disabled={deletingProject}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteProject}
+              disabled={deletingProject}
+            >
+              {deletingProject ? 'Deleting...' : 'Delete Project'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

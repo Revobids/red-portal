@@ -108,27 +108,28 @@ export default function ImageUpload({
   const removeImage = async (index: number) => {
     const image = images[index];
     
-    // If it's an existing image (has URL but not file), call delete API
+    // If it's an existing image (has URL but not file), call delete callback
     if (image.url && !image.file && onDeleteExisting) {
+      setIsUploading(true);
       try {
-        setIsUploading(true);
         await onDeleteExisting(image.url);
+        // The parent component handles the state update after successful API call
       } catch (error) {
         console.error('Failed to delete image:', error);
-        alert('Failed to delete image. Please try again.');
-        return;
+        // The parent component will show the error
       } finally {
         setIsUploading(false);
       }
-    }
+    } else {
+      // For new images, just remove from local state
+      // Clean up preview URL if it exists
+      if (image.preview) {
+        URL.revokeObjectURL(image.preview);
+      }
 
-    // Clean up preview URL if it exists
-    if (image.preview) {
-      URL.revokeObjectURL(image.preview);
+      const updatedImages = images.filter((_, i) => i !== index);
+      onImagesChange(updatedImages);
     }
-
-    const updatedImages = images.filter((_, i) => i !== index);
-    onImagesChange(updatedImages);
   };
 
   const openFileDialog = () => {
@@ -204,20 +205,37 @@ export default function ImageUpload({
                       type="button"
                       size="sm"
                       variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full shadow-md"
                       onClick={() => removeImage(index)}
                       disabled={isUploading}
+                      title={image.url && !image.file ? 'Delete image permanently' : 'Remove image'}
                     >
-                      <X className="h-3 w-3" />
+                      {isUploading ? (
+                        <div className="h-3 w-3 border border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <X className="h-3 w-3" />
+                      )}
                     </Button>
                   </div>
 
                   {/* Image Details */}
                   <div className="flex-1 space-y-3">
                     <div>
-                      <Label htmlFor={`image-type-${index}`} className="text-xs">
-                        Image Type
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor={`image-type-${index}`} className="text-xs">
+                          Image Type
+                        </Label>
+                        {image.url && !image.file && (
+                          <Badge variant="secondary" className="text-xs">
+                            Existing
+                          </Badge>
+                        )}
+                        {image.file && (
+                          <Badge variant="outline" className="text-xs">
+                            New
+                          </Badge>
+                        )}
+                      </div>
                       <Select
                         value={image.type}
                         onValueChange={(value) => updateImage(index, { type: value as ImageType })}

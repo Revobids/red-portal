@@ -30,6 +30,9 @@ export default function OfficeManagement() {
   const [showForm, setShowForm] = useState(false);
   const dispatch = useAppDispatch();
   const { addOfficeForm, offices, isLoading } = useAppSelector((state) => state.admin);
+  
+  // Ensure offices is an array
+  const officesList = Array.isArray(offices) ? offices : [];
 
   const {
     register,
@@ -202,7 +205,7 @@ export default function OfficeManagement() {
 
       {/* Offices List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {offices.length === 0 ? (
+        {officesList.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <Building2 className="h-16 w-16 mx-auto mb-4 text-slate-300" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">No offices yet</h3>
@@ -213,7 +216,7 @@ export default function OfficeManagement() {
             </Button>
           </div>
         ) : (
-          offices.map((office, index) => (
+          officesList.map((office, index) => (
             <Card key={index} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">

@@ -198,8 +198,8 @@ export default function ProjectManagement() {
 
   // Get manager options - handle both uppercase and lowercase role formats
   const managerOptions = employees.filter(emp => {
-    const role = emp.role?.toUpperCase();
-    return role === 'ADMIN' || role === 'MANAGER' || role === 'SALES_MANAGER';
+    const role = emp.role?.toLowerCase();
+    return role === 'admin' || role === 'manager' || role === 'sales_manager';
   });
 
   // If no managers found, show all employees as fallback for testing
@@ -511,7 +511,7 @@ export default function ProjectManagement() {
                         ) : (
                           availableManagers.map((manager) => (
                             <SelectItem key={manager.id} value={manager.id}>
-                              {manager.name} ({manager.role?.toUpperCase()})
+                              {manager.name} ({manager.role?.toUpperCase() || manager.role})
                             </SelectItem>
                           ))
                         )}
@@ -540,7 +540,7 @@ export default function ProjectManagement() {
                         ) : (
                           availableManagers.map((manager) => (
                             <SelectItem key={manager.id} value={manager.id}>
-                              {manager.name} ({manager.role?.toUpperCase()})
+                              {manager.name} ({manager.role?.toUpperCase() || manager.role})
                             </SelectItem>
                           ))
                         )}

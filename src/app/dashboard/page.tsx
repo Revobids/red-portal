@@ -58,19 +58,28 @@ export default function DashboardPage() {
         try {
           // Load offices
           const officesResponse = await ApiManager.getOffices();
-          if (officesResponse.success && officesResponse.data) {
+          // API returns array directly, not wrapped in {success, data}
+          if (Array.isArray(officesResponse)) {
+            dispatch(setOffices(officesResponse));
+          } else if (officesResponse && officesResponse.data) {
             dispatch(setOffices(officesResponse.data));
           }
 
           // Load employees
           const employeesResponse = await ApiManager.getEmployees();
-          if (employeesResponse.success && employeesResponse.data) {
+          // API returns array directly, not wrapped in {success, data}
+          if (Array.isArray(employeesResponse)) {
+            dispatch(setEmployees(employeesResponse));
+          } else if (employeesResponse && employeesResponse.data) {
             dispatch(setEmployees(employeesResponse.data));
           }
 
           // Load projects
           const projectsResponse = await ApiManager.getProjects();
-          if (projectsResponse.success && projectsResponse.data) {
+          // API returns array directly, not wrapped in {success, data}
+          if (Array.isArray(projectsResponse)) {
+            dispatch(setProjects(projectsResponse));
+          } else if (projectsResponse && projectsResponse.data) {
             dispatch(setProjects(projectsResponse.data));
           }
         } catch (error) {

@@ -195,8 +195,9 @@ export default function ProjectManagement() {
       console.log('Sending project data:', projectData);
       const response = await ApiManager.createProject(projectData);
       
-      if (response.success && response.data) {
-        const projectId = response.data.id;
+      // API returns the created project object directly
+      if (response && response.id) {
+        const projectId = response.id;
         
         // Refresh the projects list
         const projectsResponse = await ApiManager.getProjects();
@@ -210,7 +211,7 @@ export default function ProjectManagement() {
         dispatch(setError(null));
         toast.success('Project created successfully');
       } else {
-        const errorMessage = response.message || 'Failed to create project';
+        const errorMessage = 'Failed to create project';
         dispatch(setError(errorMessage));
         toast.error(errorMessage);
       }
@@ -317,15 +318,11 @@ export default function ProjectManagement() {
     try {
       const response = await ApiManager.deleteProject(projectToDelete.id);
       
-      if (response.success) {
-        await loadProjects();
-        toast.success(`Project "${projectToDelete.name}" deleted successfully`);
-        setProjectToDelete(null);
-      } else {
-        const errorMessage = response.message || 'Failed to delete project';
-        dispatch(setError(errorMessage));
-        toast.error(errorMessage);
-      }
+      // For DELETE requests, a successful response might be empty or have a message
+      // If we get here without throwing, it was successful
+      await loadProjects();
+      toast.success(`Project "${projectToDelete.name}" deleted successfully`);
+      setProjectToDelete(null);
     } catch (error) {
       console.error('Delete project error:', error);
       const errorMessage = 'Failed to delete project';

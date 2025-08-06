@@ -293,9 +293,9 @@ class ApiManager {
     };
 
     // Project Management
-    static createProject = (projectData: CreateProjectBody): Promise<ApiResponse<Project>> => {
+    static createProject = (projectData: CreateProjectBody): Promise<any> => {
         const url = BASE_URL + ENDPOINTS.CREATE_PROJECT();
-        return ApiMethods.post<ApiResponse<Project>>(url, projectData as unknown as Record<string, unknown>);
+        return ApiMethods.post<any>(url, projectData as unknown as Record<string, unknown>);
     };
 
     static getProjects = (): Promise<ApiResponse<Project[]>> => {
@@ -366,9 +366,9 @@ class ApiManager {
         return ApiMethods.delete<any>(url, deleteData as unknown as Record<string, unknown>);
     };
 
-    static deleteProject = (id: string): Promise<ApiResponse<void>> => {
+    static deleteProject = (id: string): Promise<any> => {
         const url = BASE_URL + ENDPOINTS.DELETE_PROJECT(id);
-        return ApiMethods.delete<ApiResponse<void>>(url);
+        return ApiMethods.delete<any>(url);
     };
 
     // Health Check

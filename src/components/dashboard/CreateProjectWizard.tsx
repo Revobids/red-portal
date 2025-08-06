@@ -193,13 +193,14 @@ export default function CreateProjectWizard({ onClose, onSuccess }: CreateProjec
 
       const response = await ApiManager.createProject(projectData);
       
-      if (response.success && response.data) {
-        setCreatedProjectId(response.data.id);
+      // API returns the created project object directly
+      if (response && response.id) {
+        setCreatedProjectId(response.id);
         toast.success('Project created successfully');
         // Move to images step
         setCurrentStep(8);
       } else {
-        const errorMessage = response.message || 'Failed to create project';
+        const errorMessage = 'Failed to create project';
         setError(errorMessage);
         toast.error(errorMessage);
       }
